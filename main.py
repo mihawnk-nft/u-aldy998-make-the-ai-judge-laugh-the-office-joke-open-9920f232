@@ -24,14 +24,29 @@ JOKE = (
 )
 
 
-def main() -> None:
+def write_entry(line: str) -> str:
+    """Write the validated joke to /output/entry.txt and return the path.
+
+    The write is atomic: the joke goes to a temporary file in the same
+    directory first, then replaces the entry, so a reader never sees a
+    half-written line.
+    """
+    assert 1 <= len(line) <= 200, f"line must be 1-200 chars, got {len(line)}"
+    assert "\n" not in line, "line must be a single line"
     output_dir = os.environ.get("OUTPUT_DIR", "/output")
     os.makedirs(output_dir, exist_ok=True)
     path = os.path.join(output_dir, "entry.txt")
     # No trailing newline: the gate counts the whole file, and the
     # joke must stay a single line of 1-200 characters.
-    with open(path, "w", encoding="utf-8", newline="") as f:
-        f.write(JOKE)
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8", newline="") as f:
+        f.write(line)
+    os.replace(tmp_path, path)
+    return path
+
+
+def main() -> None:
+    write_entry(JOKE)
 
 
 if __name__ == "__main__":
